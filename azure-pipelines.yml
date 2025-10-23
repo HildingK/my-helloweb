@@ -13,7 +13,7 @@ pool:
 
 variables:
   azureServiceConnection: 'sc-azure-wif-prod'   # from step 2
-  webAppName: 'app-helloweb-<uniq>'            # your App Service name
+  webAppName: 'app-helloweb-vamisec'            # your App Service name
   resourceGroup: 'rg-helloweb'
 
 steps:
