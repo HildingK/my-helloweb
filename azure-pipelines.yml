@@ -4,18 +4,48 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- main
+  - main
+pr:
+  - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureServiceConnection: 'sc-azure-wif-prod'   # from step 2
+  webAppName: 'app-helloweb-<uniq>'            # your App Service name
+  resourceGroup: 'rg-helloweb'
 
 steps:
+- checkout: self
+  persistCredentials: false
+
 - task: NodeTool@0
   inputs:
     versionSpec: '20.x'
-  displayName: 'Install Node.js'
 
 - script: |
-    npm install
-    npm run build
-  displayName: 'npm install and build'
+    npm ci || npm i
+    echo "Packaging app…"
+    mkdir build
+    cp -r server.js package.json build/
+    cd build && zip -r app.zip .
+  displayName: Build
+
+# Login to Azure using the OIDC-backed service connection
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: $(azureServiceConnection)
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      echo "Logged into Azure:"
+      az account show
+
+# Deploy the zip to Azure Web App
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: $(azureServiceConnection)
+    appName: $(webAppName)
+    package: $(Build.SourcesDirectory)/build/app.zip
+    appType: webAppLinux
